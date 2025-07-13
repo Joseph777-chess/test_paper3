@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>도서관의 숨겨진 방 (최종판)</title>
+    <style>
+        /* --- 기본 스타일 --- */
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: 'Malgun Gothic', sans-serif; background-color: #000; }
+        .game-container { position: relative; width: 100%; height: 100%; background-size: cover; background-position: center; display: none; }
+        .hotspot { position: absolute; cursor: pointer; /* border: 1px dashed rgba(255, 255, 0, 0.7); */ transition: background-color 0.2s; border-radius: 10px; }
+        .hotspot:hover { background-color: rgba(255, 255, 0, 0.25); }
+        #message-box { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background-color: rgba(0, 0, 0, 0.8); color: white; padding: 15px 25px; border-radius: 10px; font-size: 1.2em; display: none; z-index: 100; text-align: center; }
+        #inventory { position: fixed; bottom: 0; left: 0; width: 100%; background-color: rgba(0, 0, 0, 0.7); padding: 10px; box-sizing: border-box; display: flex; justify-content: center; align-items: center; z-index: 50; }
+        .inventory-item { width: 60px; height: 60px; border: 2px solid #555; margin: 0 5px; background-color: rgba(255, 255, 255, 0.1); cursor: pointer; display: flex; justify-content: center; align-items: center; font-size: 11px; text-align: center; color: white; border-radius: 5px; }
+        .inventory-item.selected { border-color: #ffcc00; box-shadow: 0 0 10px #ffcc00; }
+        .puzzle-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.85); display: none; justify-content: center; align-items: center; z-index: 200; }
+        .puzzle-content { background-color: #333; padding: 30px; border-radius: 15px; text-align: center; color: white; max-width: 90%; }
+        .puzzle-content h2 { margin-top: 0; }
+        .puzzle-content input, .puzzle-content button { font-size: 1.5em; padding: 10px; margin: 5px; border-radius: 5px; border: 1px solid #777; }
+        .puzzle-content button { cursor: pointer; background-color: #555; color: white; }
+        .screen-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.95); color: white; z-index: 999; display: flex; justify-content: center; align-items: center; text-align: center; flex-direction: column; padding: 20px; box-sizing: border-box; }
+        .screen-overlay p { max-width: 600px; line-height: 1.6; font-size: 1.1em; }
+        .screen-overlay button { font-size: 1.2em; padding: 10px 20px; margin-top: 20px; cursor: pointer; }
+        #final-clue-display { font-style: italic; color: #ffdd77; border-left: 3px solid #ffdd77; padding-left: 15px; margin: 20px auto; text-align: left; max-width: 400px; }
+        
+        /* --- 각 파트별 스타일 --- */
+        #classroom-game-container { background-image: url('https://github.com/Joseph777-chess/test_paper3/blob/main/Whisk_zllowvjmgy%20(1).jpg?raw=true'); }
+        #hotspot-student-desk { top: 76%; left: 7%; width: 13%; height: 13%; } #hotspot-main-desk { top: 41%; left: 48%; width: 16%; height: 10%; } #hotspot-picture-frame { top: 30%; left: 91%; width: 5%; height: 8%; } #hotspot-world-map { top: 16%; left: 52%; width: 26%; height: 15%; } #hotspot-bookshelf-lever { top: 34%; left: 42.5%; width: 3%; height: 8%; } #hotspot-scroll-map { top: 34.5%; left: 55%; width: 11%; height: 4%; } #hotspot-clock-cabinet { top: 15%; left: 20%; width: 8%; height: 21%; } #hotspot-projector { top: 56%; left: 66%; width: 11%; height: 9%; } #hotspot-power-outlet { top: 86%; left: 10%; width: 4%; height: 5%; } #hotspot-exit-door { top: 10%; left: 70%; width: 16%; height: 80%; }
+        .symbol-dial { display: inline-block; width: 50px; text-align: center; font-size: 1.5em; padding: 10px; }
+        #library-game-container { background-image: url('https://i.ibb.co/7h0ZzYH/Whisk-storyboarde3251aa760cb493aa02f1850.jpg'); }
+        #hotspot-library-ladder { top: 20%; left: 83%; width: 7%; height: 55%; } #hotspot-library-clock { top: 5%; left: 46%; width: 10%; height: 15%; } #hotspot-library-desk { top: 65%; left: 35%; width: 25%; height: 25%; } #hotspot-library-globe { top: 50%; left: 10%; width: 15%; height: 25%; } #hotspot-library-fireplace { top: 50%; left: 70%; width: 12%; height: 20%; } #hotspot-library-bookshelf { top: 35%; left: 25%; width: 10%; height: 35%; } #hotspot-library-main-door { top: 25%; left: 0%; width: 20%; height: 75%; }
+        #observatory-game-container { background-image: url('https://i.ibb.co/cKMWGkyK/Whisk-ba74940cab.jpg'); }
+        #hotspot-telescope { top: 18%; left: 28%; width: 38%; height: 60%; } #hotspot-star-chart { top: 12%; left: 2%; width: 20%; height: 35%; } #hotspot-professor-desk { top: 70%; left: 4%; width: 30%; height: 25%; } #hotspot-orrery { top: 72%; left: 75%; width: 22%; height: 22%; } #hotspot-dome-controls { top: 10%; left: 78%; width: 18%; height: 30%; } #hotspot-observatory-exit { top: 0; left: 43%; width: 14%; height: 22%; background-color: rgba(0,0,0,0.5); }
+    </style>
+</head>
+<body>
+
+    <div id="intro-screen" class="screen-overlay">
+        <div><h2>1부: 1905, 잊혀진 교실의 비밀</h2><p>당신은 학교의 오래된 대도서관, '금서 구역'에서 '어느 괴짜 교수의 일기' 한 조각을 발견했다.<br>"...지식의 숲에서 붉은 가죽의 '천문학 입문'을 찾아 당겨보라."<br><br>책을 당기자, 책장 전체가 안쪽으로 돌아가며 숨겨진 교실의 입구를 드러냈다. 호기심에 안으로 들어서는 순간, 등 뒤에서 육중한 소리와 함께 책장이 저절로 닫히고 말았다.</p><button id="start-game-button">게임 시작</button></div>
+    </div>
+    
+    <div id="transition-to-part2" class="screen-overlay" style="display: none;">
+        <div><h2>2부: 도서관 탈출</h2><p>비밀 교실의 책장을 밀고 나오자, 익숙한 도서관의 풍경이 나타났다.<br>하지만 안심하기엔 이르다. 이미 시간은 자정을 훌쩍 넘었고, 도서관의 정문마저 굳게 잠겨있다.<br><br>이제는 이 거대한 지식의 전당 그 자체에서 탈출해야 한다!</p><button onclick="showPart(2)">계속하기</button></div>
+    </div>
+
+    <div id="transition-to-part3" class="screen-overlay" style="display: none;">
+        <div><h2>3부: 교수님의 비밀 천문대</h2><p>도서관 정문의 자물쇠를 풀자, 문은 바깥으로 열리지 않았다.<br>대신, 위로 향하는 낡은 나선형 계단과 함께 '별에 닿고자 하는 자, 이곳으로'라는 쪽지가 나타났다.<br><br>당신은 호기심을 이기지 못하고 교수의 마지막 비밀이 숨겨진 학교의 가장 높은 곳, 비밀 천문대로 발걸음을 옮긴다.</p><button onclick="showPart(3)">마지막 장으로</button></div>
+    </div>
+
+    <div id="outro-screen" class="screen-overlay" style="display: none;">
+        <div><h2>진정한 탈출</h2><p>마지막 문이 열리자, 새벽의 시원한 공기가 당신을 맞이했다.<br>당신은 괴짜 교수가 남긴 지식의 여정을 모두 통과했다.<br><br>과거의 지식을 통해 현재의 문제를 해결하고, 마침내 별을 향한 미래의 문을 연 것이다.<br>진정한 배움이란, 흩어진 지식을 연결하여 새로운 길을 찾는 여정 그 자체임을 깨닫는다.</p><button onclick="location.reload()">다시 플레이</button></div>
+    </div>
+
+    <!-- 게임 컨테이너들 -->
+    <div id="classroom-game-container" class="game-container">
+        <div id="hotspot-student-desk" class="hotspot"></div><div id="hotspot-main-desk" class="hotspot"></div><div id="hotspot-picture-frame" class="hotspot"></div><div id="hotspot-world-map" class="hotspot"></div><div id="hotspot-bookshelf-lever" class="hotspot"></div><div id="hotspot-scroll-map" class="hotspot"></div><div id="hotspot-clock-cabinet" class="hotspot"></div><div id="hotspot-projector" class="hotspot"></div><div id="hotspot-power-outlet" class="hotspot"></div><div id="hotspot-exit-door" class="hotspot"></div>
+    </div>
+    <div id="library-game-container" class="game-container">
+        <div id="hotspot-library-ladder" class="hotspot"></div><div id="hotspot-library-clock" class="hotspot"></div><div id="hotspot-library-desk" class="hotspot"></div><div id="hotspot-library-globe" class="hotspot"></div><div id="hotspot-library-fireplace" class="hotspot"></div><div id="hotspot-library-bookshelf" class="hotspot"></div><div id="hotspot-library-main-door" class="hotspot"></div>
+    </div>
+    <div id="observatory-game-container" class="game-container">
+        <div id="hotspot-telescope" class="hotspot"></div><div id="hotspot-star-chart" class="hotspot"></div><div id="hotspot-professor-desk" class="hotspot"></div><div id="hotspot-orrery" class="hotspot"></div><div id="hotspot-dome-controls" class="hotspot"></div><div id="hotspot-observatory-exit" class="hotspot"></div>
+    </div>
+
+    <div id="message-box"></div><div id="inventory"></div>
+
+    <!-- 퍼즐 모달들 -->
+    <div id="puzzle-modals">
+        <div class="puzzle-modal" data-game="1">
+            <div id="keypad-puzzle" class="puzzle-content" style="display: none;"><h2>교탁 서랍</h2><p>네 자리 숫자 자물쇠가 걸려있다.</p><input type="text" id="keypad-input" maxlength="4" placeholder="_ _ _ _"><button id="keypad-submit">열기</button><button onclick="hidePuzzles()">닫기</button></div>
+            <div id="symbol-puzzle" class="puzzle-content" style="display: none;"><h2>괘종시계 캐비닛</h2><p>네 개의 그림 다이얼이 있다.</p><div><button class="symbol-dial" data-index="0">?</button><button class="symbol-dial" data-index="1">?</button><button class="symbol-dial" data-index="2">?</button><button class="symbol-dial" data-index="3">?</button></div><br><button id="symbol-submit">확인</button><button onclick="hidePuzzles()">닫기</button></div>
+        </div>
+        <div class="puzzle-modal" data-game="2">
+            <div id="library-door-puzzle" class="puzzle-content" style="display: none;"><h2>도서관 정문</h2><p>네 자리 비밀번호를 입력해야 한다.</p><input type="text" id="library-door-input" maxlength="4" placeholder="_ _ _ _"><button id="library-door-submit">잠금 해제</button><button onclick="hidePuzzles()">닫기</button></div>
+        </div>
+        <div class="puzzle-modal" data-game="3">
+            <!-- 변경점: 최종 퍼즐 모달 구조 수정 -->
+            <div id="observatory-exit-puzzle" class="puzzle-content" style="display: none;">
+                <h2>최종 탈출구</h2>
+                <blockquote id="final-clue-display"></blockquote>
+                <p style="margin-top: 20px;">암호를 입력하세요.</p>
+                <input type="text" id="observatory-exit-input" maxlength="5" placeholder="_ _ _ _ _"><button id="observatory-exit-submit">탈출</button><button onclick="hidePuzzles()">닫기</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const messageBox = document.getElementById('message-box');
+        const inventoryDiv = document.getElementById('inventory');
+        let currentGameState = {}; let currentItemData = {}; let activeHotspots = [];
+        const gameContainers = { 1: document.getElementById('classroom-game-container'), 2: document.getElementById('library-game-container'), 3: document.getElementById('observatory-game-container') };
+        const puzzleModals = { 1: document.querySelector('.puzzle-modal[data-game="1"]'), 2: document.querySelector('.puzzle-modal[data-game="2"]'), 3: document.querySelector('.puzzle-modal[data-game="3"]') };
+        const transitions = { 2: document.getElementById('transition-to-part2'), 3: document.getElementById('transition-to-part3') };
+
+        const gameData = {
+            1: {
+                state: { inventory: [], selectedItem: null, puzzlesSolved: { foundBookmark: false, deskUnlocked: false, foundCoords: false, mapButtonPressed: false, lensFallen: false, leverPulled: false, leverCabinetOpened: false, noteCombined: false, clockCabinetUnlocked: false, clockRepaired: false, projectorAssembled: false, projectorPowered: false, }, hotspotStates: { 'hotspot-bookshelf-lever': 'hidden', }},
+                items: { 'bookmark': { name: '책갈피', desc: "설립일: 1905년" }, 'magnifying-glass': { name: '돋보기', desc: "작은 것을 크게 볼 수 있다." }, 'projector-lens': { name: '환등기 렌즈', desc: "환등기에 필요할 것 같다." }, 'empty-oil-can': { name: '빈 기름병', desc: "기름을 담을 수 있다." }, 'note1': { name: '찢어진 쪽지①', desc: "해, 달, ?, ?" }, 'note2': { name: '찢어진 쪽지②', desc: "별, 행성" }, 'full-note': { name: '완전한 쪽지', desc: "해-달-별-행성" }, 'wrench': { name: '낡은 렌치', desc: "볼트를 풀 수 있다." }, 'oil-drum': { name: '기름통', desc: "기름이 가득 차 있다." }, 'full-oil-can': { name: '기름 든 기름병', desc: "녹슨 기계에 쓰면 좋겠다." }, 'projector-slide': { name: '환등기 슬라이드', desc: "어떤 이미지가 담겨 있을까?" } }
+            },
+            2: {
+                state: { inventory: [], selectedItem: null, puzzlesSolved: { pokerFound: false, bookFound: false, bookExamined: false, clockWound: false, drawerUnlocked: false, screwdriverFound: false, uvLightAssembled: false, secretSymbolFound: false, ladderPlaqueRevealed: false }},
+                items: { 'fireplace-poker': { name: '부지깽이', desc: "길고 단단하다. 무언가를 꺼낼 때 좋겠다." }, 'strange-book': { name: '이상한 책', desc: "표지가 특이하다. 안을 살펴봐야겠다." }, 'winding-key': { name: '태엽 열쇠', desc: "시계나 오르골에 사용될 것 같다." }, 'drawer-key': { name: '서랍 열쇠', desc: "작은 서랍에 맞는 열쇠인 듯하다." }, 'screwdriver': { name: '드라이버', desc: "나사를 풀 수 있다." }, 'uv-flashlight': { name: 'UV 손전등', desc: "보이지 않는 것을 보게 해준다." } }
+            },
+            3: {
+                // 변경점: finalMessageRead 상태 제거
+                state: { inventory: [], selectedItem: null, puzzlesSolved: { logbookFound: false, controlsFixed: false, domeOpen: false, coordinatesFound: false, orrerySolved: false, lensObtained: false, telescopeAligned: false }},
+                items: { 'crowbar': { name: '쇠지렛대', desc: "녹슨 장치를 움직일 수 있을 것 같다." }, 'professors-logbook': { name: '교수의 일지', desc: "마지막 기록: 나의 모든 것은 용자리를 향한다. 특별한 렌즈 없이는 볼 수 없으리라." }, 'special-lens': { name: '특수 렌즈', desc: "망원경에 꼭 맞을 것 같다." } }
+            }
+        };
+
+        function showMessage(text, duration = 3000) { messageBox.textContent = text; messageBox.style.display = 'block'; setTimeout(() => { messageBox.style.display = 'none'; }, duration); }
+        function updateInventory() { inventoryDiv.innerHTML = ''; currentGameState.inventory.forEach(itemId => { const itemEl = document.createElement('div'); itemEl.className = 'inventory-item'; itemEl.dataset.itemId = itemId; itemEl.textContent = currentItemData[itemId].name; if (currentGameState.selectedItem === itemId) { itemEl.classList.add('selected'); } itemEl.onclick = () => onInventoryClick(itemId); inventoryDiv.appendChild(itemEl); }); }
+        function addItem(itemId) { if (!hasItem(itemId)) { currentGameState.inventory.push(itemId); updateInventory(); showMessage(`'${currentItemData[itemId].name}'을(를) 획득했다!`); } }
+        function removeItem(itemId) { currentGameState.inventory = currentGameState.inventory.filter(id => id !== itemId); if (currentGameState.selectedItem === itemId) { currentGameState.selectedItem = null; } updateInventory(); }
+        function hasItem(itemId) { return currentGameState.inventory.includes(itemId); }
+        function hidePuzzles() { Object.values(puzzleModals).forEach(m => {const modalContainer = m.closest('.puzzle-modal'); if(modalContainer) modalContainer.style.display = 'none';}); document.querySelectorAll('.puzzle-content').forEach(p => p.style.display = 'none'); }
+
+        function onInventoryClick(itemId) {
+            const previouslySelectedItem = currentGameState.selectedItem;
+            if (previouslySelectedItem) {
+                if (previouslySelectedItem === itemId) {
+                    if (itemId === 'strange-book' && gameData[2].state === currentGameState && !gameData[2].state.puzzlesSolved.bookExamined) { showMessage("책의 표지를 열자, 홈이 파인 곳에 [태엽 열쇠]가 숨겨져 있다!"); addItem('winding-key'); gameData[2].state.puzzlesSolved.bookExamined = true; } 
+                    else if (itemId === 'professors-logbook') { showMessage(currentItemData[itemId].desc, 5000); }
+                    else { showMessage(currentItemData[itemId].desc); }
+                    currentGameState.selectedItem = null;
+                } else {
+                    let combined = false;
+                    if (gameData[1].state === currentGameState) {
+                        if ((previouslySelectedItem === 'note1' && itemId === 'note2') || (previouslySelectedItem === 'note2' && itemId === 'note1')) { showMessage("두 개의 찢어진 쪽지를 합쳐 완전한 암호를 만들었다."); removeItem('note1'); removeItem('note2'); addItem('full-note'); gameData[1].state.puzzlesSolved.noteCombined = true; combined = true; }
+                        else if ((previouslySelectedItem === 'empty-oil-can' && itemId === 'oil-drum') || (previouslySelectedItem === 'oil-drum' && itemId === 'empty-oil-can')) { showMessage("빈 기름병에 기름을 가득 채웠다."); removeItem('empty-oil-can'); addItem('full-oil-can'); combined = true; }
+                    }
+                    if (!combined) { showMessage("함께 사용할 수 없는 아이템이다."); }
+                    currentGameState.selectedItem = null;
+                }
+            } else { currentGameState.selectedItem = itemId; }
+            updateInventory();
+        }
+
+        function handleGameClick(part, id, selected) {
+            const { puzzlesSolved } = gameData[part].state;
+            if (part === 1) {
+                // 1부 로직 (변경 없음)
+                 switch (id) { case 'hotspot-student-desk': if (!puzzlesSolved.foundBookmark) { puzzlesSolved.foundBookmark = true; addItem('bookmark'); } else { showMessage("특별한 것은 더 이상 없어 보인다."); } break; case 'hotspot-main-desk': if (puzzlesSolved.deskUnlocked) { showMessage("서랍은 비어있다."); } else { puzzleModals[1].style.display = 'flex'; document.getElementById('keypad-puzzle').style.display = 'block'; } break; case 'hotspot-picture-frame': if (selected === 'magnifying-glass') { if (!puzzlesSolved.foundCoords) { puzzlesSolved.foundCoords = true; showMessage("돋보기로 자세히 보니 작은 글씨가 보인다... 'N 40°, W 74°'"); } else { showMessage("이미 좌표를 확인했다."); } } else { showMessage("오래된 풍경화다. 무언가 숨겨져 있을 것 같다."); } break; case 'hotspot-world-map': if (puzzlesSolved.foundCoords && !puzzlesSolved.mapButtonPressed) { puzzlesSolved.mapButtonPressed = true; puzzlesSolved.lensFallen = true; gameData[1].state.hotspotStates['hotspot-bookshelf-lever'] = 'revealed'; showMessage("좌표를 누르자 어딘가에서 '딸깍' 소리와 함께, 책장 쪽에서 무언가 굴러떨어지는 소리가 들렸다."); } else if (puzzlesSolved.mapButtonPressed) { showMessage("이미 버튼을 눌렀다."); } else { showMessage("거대한 세계 지도다. 특별한 점은 없어 보인다."); } break; case 'hotspot-bookshelf-lever': if (puzzlesSolved.lensFallen && !hasItem('projector-lens')) { showMessage("책장 아래쪽을 살펴보니 작은 렌즈가 굴러와 있다."); addItem('projector-lens'); return; } if (gameData[1].state.hotspotStates['hotspot-bookshelf-lever'] === 'revealed' && gameData[1].state.hotspotStates['hotspot-bookshelf-lever'] !== 'pulled') { gameData[1].state.hotspotStates['hotspot-bookshelf-lever'] = 'pulled'; showMessage("책 모양의 레버를 당기자 책장 하단에 비밀 공간이 열렸다."); } else if (gameData[1].state.hotspotStates['hotspot-bookshelf-lever'] === 'pulled' && !puzzlesSolved.leverCabinetOpened) { puzzlesSolved.leverCabinetOpened = true; showMessage("비밀 공간 안을 확인하자 무언가 들어있다."); addItem('empty-oil-can'); addItem('note1'); } else if (puzzlesSolved.leverCabinetOpened) { showMessage("비밀 공간은 비어있다."); } else { showMessage("평범한 책장인 것 같다."); } break; case 'hotspot-scroll-map': if (!hasItem('note2') && !hasItem('full-note')) { addItem('note2'); } else { showMessage("오래된 두루마리 지도다."); } break; case 'hotspot-clock-cabinet': if (puzzlesSolved.clockCabinetUnlocked) { if (selected === 'wrench') { showMessage("렌치로 옆면 패널을 열고, 굳어버린 톱니바퀴를 발견했다."); } else if (selected === 'full-oil-can') { if(puzzlesSolved.clockRepaired) { showMessage("이미 수리했다."); return; } removeItem('full-oil-can'); puzzlesSolved.clockRepaired = true; addItem('projector-slide'); showMessage("기름을 붓자 시계가 다시 움직이기 시작했다! 5시 25분에 멈추더니, 작은 서랍이 열렸다."); } else if (puzzlesSolved.clockRepaired) { showMessage("시계는 이미 수리했다."); } else { showMessage("시계 내부를 열어보니 렌치를 얻었다."); } } else if (hasItem('full-note')) { puzzleModals[1].style.display = 'flex'; document.getElementById('symbol-puzzle').style.display = 'block'; } else { showMessage("그림이 그려진 자물쇠로 잠겨있다."); } break; case 'hotspot-projector': if (selected === 'projector-lens' && !hasItem('projector-slide')) { showMessage("렌즈를 끼웠다. 슬라이드를 넣을 자리가 비어있다."); } else if (selected === 'projector-slide' && hasItem('projector-lens')) { puzzlesSolved.projectorAssembled = true; showMessage("렌즈와 슬라이드를 모두 장착했다. 이제 전원만 연결하면 될 것 같다."); } else if (puzzlesSolved.projectorAssembled && !puzzlesSolved.projectorPowered) { showMessage("환등기의 전선이 끊어져 있다. 콘센트에 연결해야 할 것 같다."); } else if (puzzlesSolved.projectorPowered) { showMessage("환등기가 칠판에 '탈출구는 책장'이라고 비추고 있다."); } else { showMessage("오래된 환등기다. 렌즈와 슬라이드가 빠져있다."); } break; case 'hotspot-power-outlet': if (puzzlesSolved.projectorAssembled && !puzzlesSolved.projectorPowered) { puzzlesSolved.projectorPowered = true; showMessage("환등기 전선을 콘센트에 연결하자, '위잉-' 소리와 함께 환등기가 작동하며 칠판에 이미지를 비춘다!"); } else { showMessage("낡은 콘센트다."); } break; case 'hotspot-exit-door': if (puzzlesSolved.projectorPowered) { gameContainers[1].style.display = 'none'; inventoryDiv.style.display = 'none'; transitions[2].style.display = 'flex'; } else { showMessage("꿈쩍도 하지 않는 책장이다. 어딘가에 기계장치가 숨겨져 있는 것 같다."); } break; default: if(selected) showMessage("여기에 사용할 수 없다."); break; }
+            } else if (part === 2) {
+                // 2부 로직 (변경 없음)
+                switch (id) { case 'hotspot-library-fireplace': if (!puzzlesSolved.pokerFound) { showMessage("차가운 벽난로 옆에서 [부지깽이]를 발견했다."); addItem('fireplace-poker'); puzzlesSolved.pokerFound = true; } else { showMessage("차가운 벽난로다."); } break; case 'hotspot-library-bookshelf': if (selected === 'fireplace-poker' && !puzzlesSolved.bookFound) { showMessage("부지깽이를 이용해 높은 곳에 있던 [이상한 책]을 꺼냈다."); addItem('strange-book'); removeItem('fireplace-poker'); puzzlesSolved.bookFound = true; } else if (puzzlesSolved.bookFound) { showMessage("수많은 책들이 꽂혀있다."); } else { showMessage("손이 닿지 않는 높은 곳에 책이 한 권 있다."); } break; case 'hotspot-library-clock': if (selected === 'winding-key' && !puzzlesSolved.clockWound) { showMessage("태엽 열쇠로 시계를 감자, 시계추가 흔들리며 '땡' 하는 소리와 함께 아래에서 [서랍 열쇠]가 떨어졌다.\n시계는 8시에 멈춰 섰다."); addItem('drawer-key'); removeItem('winding-key'); puzzlesSolved.clockWound = true; } else if (puzzlesSolved.clockWound) { showMessage("시계는 8시를 가리킨 채 멈춰있다."); } else { showMessage("오래된 괘종시계. 태엽이 풀려있다."); } break; case 'hotspot-library-desk': if (selected === 'drawer-key' && !puzzlesSolved.drawerUnlocked) { showMessage("서랍 열쇠로 책상 서랍을 열었다. 안에서 [드라이버]를 발견했다."); addItem('screwdriver'); removeItem('drawer-key'); puzzlesSolved.drawerUnlocked = true; } else if (puzzlesSolved.drawerUnlocked) { showMessage("서랍은 비어있다."); } else { showMessage("잠겨있는 책상 서랍이다."); } break; case 'hotspot-library-globe': if (selected === 'screwdriver' && !puzzlesSolved.uvLightAssembled) { showMessage("드라이버로 지구본의 받침대를 열자, 그 안에 숨겨져 있던 [UV 손전등]을 발견했다."); addItem('uv-flashlight'); removeItem('screwdriver'); puzzlesSolved.uvLightAssembled = true; } else if(puzzlesSolved.uvLightAssembled) { showMessage("받침대가 열린 지구본이다."); } else { showMessage("오래된 지구본이다. 받침대에 나사가 박혀있다."); } break; case 'hotspot-library-main-door': if (selected === 'uv-flashlight' && !puzzlesSolved.secretSymbolFound) { showMessage("UV 손전등을 문에 비추자, 보이지 않던 숫자 '5'가 희미하게 나타났다!"); puzzlesSolved.secretSymbolFound = true; } else { puzzleModals[2].style.display = 'flex'; document.getElementById('library-door-puzzle').style.display = 'block'; } break; case 'hotspot-library-ladder': if (!puzzlesSolved.ladderPlaqueRevealed) { showMessage("사다리를 자세히 보니 작은 명판이 붙어있다. '제조번호: 1942'"); puzzlesSolved.ladderPlaqueRevealed = true; } else { showMessage("제조번호가 1942인 튼튼한 사다리다."); } break; default: if(selected) showMessage("여기에 사용할 수 없다."); break; }
+            } else if (part === 3) {
+                // 3부 로직 (변경점 반영)
+                 switch (id) {
+                    case 'hotspot-professor-desk': if (!puzzlesSolved.logbookFound) { showMessage("교수의 책상 위에서 낡은 [교수의 일지]를 발견했다."); addItem('professors-logbook'); puzzlesSolved.logbookFound = true; } else { showMessage("먼지 쌓인 책상이다."); } break;
+                    case 'hotspot-dome-controls': if(selected === 'crowbar' && !puzzlesSolved.controlsFixed) { showMessage("쇠지렛대로 녹슨 제어장치를 움직였다. 이제 돔을 열 수 있을 것 같다!"); puzzlesSolved.controlsFixed = true; removeItem('crowbar'); } else if(puzzlesSolved.controlsFixed && !puzzlesSolved.domeOpen) { showMessage("제어장치를 작동시키자, 천장의 돔이 '끼이익' 소리를 내며 열리고 밤하늘이 보인다."); puzzlesSolved.domeOpen = true; } else if (puzzlesSolved.domeOpen) { showMessage("돔이 열려 밤하늘이 보인다."); } else { showMessage("제어장치가 녹슬어 움직이지 않는다."); } break;
+                    case 'hotspot-star-chart': if (puzzlesSolved.logbookFound && !puzzlesSolved.coordinatesFound) { showMessage("일지의 내용대로 '용자리(Draco)' 성도를 살펴보자, 특정 별에 'RA 18 36' 이라는 글씨가 적혀있다."); puzzlesSolved.coordinatesFound = true; } else { showMessage("수많은 별들이 그려진 복잡한 성도다. 어떤 것을 봐야할 지 모르겠다."); } break;
+                    case 'hotspot-orrery': if (!puzzlesSolved.orrerySolved) { showMessage("행성 모형 아래에 작은 [쇠지렛대]가 끼어있다."); addItem('crowbar'); puzzlesSolved.orrerySolved = true; } else if(puzzlesSolved.orrerySolved && !puzzlesSolved.lensObtained) { showMessage("행성 모형을 다시 살펴보니, 화성 모형이 빠진다. 그 안에서 [특수 렌즈]를 발견했다!"); addItem('special-lens'); puzzlesSolved.lensObtained = true; } else { showMessage("정교한 행성 모형이다."); } break;
+                    case 'hotspot-telescope':
+                        if (!puzzlesSolved.domeOpen) { showMessage("돔이 닫혀있어 아무것도 보이지 않는다."); }
+                        else if (!puzzlesSolved.coordinatesFound) { showMessage("어디를 조준해야 할지 모르겠다."); }
+                        else if (selected !== 'special-lens') { showMessage("망원경을 좌표 'RA 18 36'에 맞췄지만, 초점이 맞지 않아 흐릿하다. 특별한 렌즈가 필요한 것 같다."); }
+                        else if (selected === 'special-lens' && !puzzlesSolved.telescopeAligned) {
+                            showMessage("특수 렌즈를 끼우고 다시 보자, 놀랍게도 별들 사이에 'DE +38 47'이라는 글자가 나타났다! 이제 교수의 마지막 메시지를 볼 수 있을 것 같다.");
+                            puzzlesSolved.telescopeAligned = true;
+                        } else { showMessage("망원경은 하늘의 특정 지점을 가리키고 있다."); }
+                        break;
+                    case 'hotspot-observatory-exit':
+                        if (puzzlesSolved.telescopeAligned) {
+                            // 메시지를 퍼즐 창 내부에 영구적으로 표시
+                            const clueDisplay = document.getElementById('final-clue-display');
+                            clueDisplay.innerHTML = "'자네가 여기까지 왔군. <br>과거의 지식(1905)과 현재의 지혜(8542)를 연결하게. <br>진정한 열쇠는 그 여정의 총합이라네.'";
+                            puzzleModals[3].style.display = 'flex';
+                            document.getElementById('observatory-exit-puzzle').style.display = 'block';
+                        } else {
+                            showMessage("문이 굳게 잠겨있다. 교수의 마지막 메시지가 필요할 것 같다.");
+                        }
+                        break;
+                    default: if(selected) showMessage("여기에 사용할 수 없다."); break;
+                }
+            }
+            if(selected) { currentGameState.selectedItem = null; updateInventory(); }
+        }
+
+        function switchGame(part) {
+            currentGameState = gameData[part].state;
+            currentItemData = gameData[part].items;
+            Object.values(gameContainers).forEach(c => c.style.display = 'none');
+            gameContainers[part].style.display = 'block';
+            inventoryDiv.style.display = 'flex';
+            if (activeHotspots.length > 0) { activeHotspots.forEach(h => h.replaceWith(h.cloneNode(true))); }
+            activeHotspots = document.querySelectorAll(`#${gameContainers[part].id} .hotspot`);
+            activeHotspots.forEach(h => h.addEventListener('click', () => handleGameClick(part, h.id, currentGameState.selectedItem)));
+            updateInventory();
+        }
+
+        function showPart(part) {
+            Object.values(transitions).forEach(t => { if(t) t.style.display = 'none'; });
+            switchGame(part);
+            const welcomeMessages = { 2: "2부: 도서관 탈출", 3: "3부: 비밀 천문대" };
+            showMessage(welcomeMessages[part], 2000);
+        }
+
+        document.getElementById('start-game-button').onclick = () => { document.getElementById('intro-screen').style.display = 'none'; switchGame(1); showMessage("1부: 잊혀진 교실의 비밀", 2000); };
+        document.getElementById('keypad-submit').onclick = () => { if (document.getElementById('keypad-input').value === '1905') { gameData[1].state.puzzlesSolved.deskUnlocked = true; addItem('magnifying-glass'); hidePuzzles(); } else { showMessage("틀렸다.", 1500); } };
+        document.getElementById('library-door-submit').onclick = () => { if (document.getElementById('library-door-input').value === '8542') { hidePuzzles(); gameContainers[2].style.display = 'none'; inventoryDiv.style.display = 'none'; transitions[3].style.display = 'flex'; } else { showMessage("비밀번호가 맞지 않는다.", 1500); } };
+        document.getElementById('observatory-exit-submit').onclick = () => { if (document.getElementById('observatory-exit-input').value === '10447') { hidePuzzles(); gameContainers[3].style.display = 'none'; inventoryDiv.style.display = 'none'; document.getElementById('outro-screen').style.display = 'flex'; } else { showMessage("비밀번호가 맞지 않는다.", 1500); } };
+        const symbols = ['?', '해', '달', '별', '행성']; let currentSymbols = [0, 0, 0, 0];
+        document.querySelectorAll('.symbol-dial').forEach(dial => { dial.onclick = () => { const index = parseInt(dial.dataset.index); currentSymbols[index] = (currentSymbols[index] + 1) % symbols.length; dial.textContent = symbols[currentSymbols[index]]; }; });
+        document.getElementById('symbol-submit').onclick = () => { if (currentSymbols.map(i => symbols[i]).join('-') === '해-달-별-행성') { gameData[1].state.puzzlesSolved.clockCabinetUnlocked = true; if(hasItem('full-note')) removeItem('full-note'); addItem('wrench'); addItem('oil-drum'); hidePuzzles(); } else { showMessage("틀렸다.", 1500); } };
+    </script>
+</body>
+</html>
